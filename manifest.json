@@ -2,7 +2,9 @@
 	"name": "chromeアプリ-サーバー",
 	"description": "chromeアプリ-サーバー",
 	"version": "0.1",
-	"permissions": [],
+	"permissions": [
+		"storage"
+	],
 		
 	"icons": {
 		"128": "icon/icon-128.png"
@@ -10,7 +12,7 @@
 			
 	"app": {
 		"background": {
-			"scripts": ["background.js"]
+			"page": "background.html"
 		}
 	},
 		
