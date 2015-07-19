@@ -32,7 +32,7 @@ img.onload = function (){
 	ctx.drawImage(img, 0, 0);
 };
 
-chrome.sockets.tcpServer.create({}, function(createInfo) {
+chrome.sockets.tcpServer.create(function(createInfo) {
 	console.log("chrome.sockets.tcpServer.create", createInfo);
 	socketId = createInfo.socketId;
 
