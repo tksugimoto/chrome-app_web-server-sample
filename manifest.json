@@ -1,0 +1,27 @@
+﻿{
+	"name": "chromeアプリ-サーバー",
+	"description": "chromeアプリ-サーバー",
+	"version": "0.1",
+	"permissions": [],
+		
+	"icons": {
+		"128": "icon/icon-128.png"
+	},
+			
+	"app": {
+		"background": {
+			"scripts": ["background.js"]
+		}
+	},
+		
+	"sockets": {
+		/*
+		"tcp": {
+			"connect": "*"
+		},
+		//*/
+		"tcpServer": {
+			"listen": "127.0.0.1"
+		}
+	}
+}
