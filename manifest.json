@@ -1,6 +1,6 @@
 ﻿{
-	"name": "chromeアプリ-サーバー",
-	"description": "chromeアプリ-サーバー",
+	"name": "chromeアプリ-WEBサーバー",
+	"description": "http://127.0.0.1:9000/にアクセスでページを返す",
 	"version": "0.1",
 	"permissions": [
 		"storage"
