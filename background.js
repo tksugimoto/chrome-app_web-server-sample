@@ -53,7 +53,7 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 	var clientSocketId = info.socketId;
 	var requestText = arrayBuffer2string(info.data);
 	
-	console.log("chrome.sockets.tcp.onReceive", requestText.split("\n")[0], info);
+	console.log("chrome.sockets.tcp.onReceive", requestText.split("\n")[0], info, requestText);
 	
 	if (requestText.indexOf("GET /favicon.ico HTTP/1.1") === 0) {
 		// TODO: iconの大きさも一緒に返している気がする
@@ -65,7 +65,8 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 			"Content-Type: image/png"
 		].join("\n");
 		var responseText = header + "\n\n" + image;
-		chrome.sockets.tcp.send(clientSocketId, string2arrayBuffer(responseText), function(info) {
+		var arrayBuffer = string2arrayBuffer(responseText, "notUTF8");
+		chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
 			chrome.sockets.tcp.disconnect(clientSocketId);
 			chrome.sockets.tcp.close(clientSocketId);
 		});
@@ -77,33 +78,48 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 	//		"Content-Length: " + message.length//この指定をすると日本語が含まれている場合に途中で切れる
 		].join("\n");
 		var responseText = header + "\n\n" + message;
+		var arrayBuffer = string2arrayBuffer(responseText);
+		chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
+			chrome.sockets.tcp.disconnect(clientSocketId);
+			chrome.sockets.tcp.close(clientSocketId);
+		});
+		/*
 		utf8String2arrayBuffer(responseText, function (arrayBuffer){
 			chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
 				chrome.sockets.tcp.disconnect(clientSocketId);
 				chrome.sockets.tcp.close(clientSocketId);
 			});
 		});
+		*/
 	}
 });
 
 function utf8String2arrayBuffer(string, callback) {
 	var fileReader = new FileReader();
-	fileReader.onloadend = function() {
+	fileReader.onload = function() {
 		callback(fileReader.result);
 	};
 	fileReader.readAsArrayBuffer(new Blob([string]));
 }
 
-function string2arrayBuffer(string) {
-	// UTF-8 未対応
-	var uint8Array = new Uint8Array(string.length);
-	for (var i = 0, len = uint8Array.length; i < len; i++) {
-		uint8Array[i] = string.charCodeAt(i);
+function string2arrayBuffer(string, notUTF8) {
+	if (notUTF8) {
+		var uint8Array = new Uint8Array(string.length);
+		for (var i = 0, len = uint8Array.length; i < len; i++) {
+			uint8Array[i] = string.charCodeAt(i);
+		}
+		return uint8Array.buffer;
+	} else {
+		// UTF-8
+		return new TextEncoder("utf-8").encode(string).buffer;
 	}
-	return uint8Array.buffer;
 }
 
-function arrayBuffer2string(arrayBuffer) {
+function arrayBuffer2string(arrayBuffer, encoding) {
+	if (!encoding) encoding = "utf-8";
+	var uint8Array = new Uint8Array(arrayBuffer);
+	return new TextDecoder(encoding).decode(uint8Array);
+	
 	// UTF-8 未対応
 	var uint8Array = new Uint8Array(arrayBuffer);
 	var string = "";
