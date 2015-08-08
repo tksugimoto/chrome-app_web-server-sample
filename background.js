@@ -53,9 +53,13 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 	var clientSocketId = info.socketId;
 	var requestText = arrayBuffer2string(info.data);
 	
-	console.log("chrome.sockets.tcp.onReceive", requestText.split("\n")[0], info, requestText);
+	var path = null;
+	if (requestText.match(/^GET ([^ ]+) HTTP/)) {
+		path = RegExp.$1;
+	}
+	console.log("chrome.sockets.tcp.onReceive", path, requestText.split("\n")[0], info, requestText);
 	
-	if (requestText.indexOf("GET /favicon.ico HTTP/1.1") === 0) {
+	if (path === "/favicon.ico") {
 		// TODO: iconの大きさも一緒に返している気がする
 		var type = "image/png";
 		var dataUrl = canvas.toDataURL(type);
@@ -70,36 +74,49 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 			chrome.sockets.tcp.disconnect(clientSocketId);
 			chrome.sockets.tcp.close(clientSocketId);
 		});
+	} else if (path === "/" || path === "/index.html") {
+		var filePath = "file/index.html";
+		var xhr = new XMLHttpRequest();
+		xhr.open("GET", filePath);
+		xhr.onload = function() {
+			if (xhr.readyState === 4) {
+				if (xhr.status === 200) {
+					var body = xhr.responseText;
+					var header = [
+						"HTTP/1.1 200 OK",
+						"Content-Type: text/html"
+					].join("\n");
+					var responseText = header + "\n\n" + body;
+					var arrayBuffer = string2arrayBuffer(responseText);
+					chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
+						console.log(123);
+						chrome.sockets.tcp.disconnect(clientSocketId);
+						chrome.sockets.tcp.close(clientSocketId);
+					});
+				} else {
+					notFound(clientSocketId);
+				}
+			}
+		};
+		xhr.send(null);
 	} else {
-		var message = '<title>test</title><link rel="icon" href="/favicon.ico" type="image/png" />asdadsはろーbbb';
-		var header = [
-			"HTTP/1.1 200 OK",
-			"Content-Type: text/html; charset=utf-8",
-	//		"Content-Length: " + message.length//この指定をすると日本語が含まれている場合に途中で切れる
-		].join("\n");
-		var responseText = header + "\n\n" + message;
-		var arrayBuffer = string2arrayBuffer(responseText);
-		chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
-			chrome.sockets.tcp.disconnect(clientSocketId);
-			chrome.sockets.tcp.close(clientSocketId);
-		});
-		/*
-		utf8String2arrayBuffer(responseText, function (arrayBuffer){
-			chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
-				chrome.sockets.tcp.disconnect(clientSocketId);
-				chrome.sockets.tcp.close(clientSocketId);
-			});
-		});
-		*/
+		notFound(clientSocketId);
 	}
 });
 
-function utf8String2arrayBuffer(string, callback) {
-	var fileReader = new FileReader();
-	fileReader.onload = function() {
-		callback(fileReader.result);
-	};
-	fileReader.readAsArrayBuffer(new Blob([string]));
+function notFound(clientSocketId){
+	var message = '<title>404 page not found</title><link rel="icon" href="/favicon.ico" type="image/png" />ページが見つかりません';
+	var header = [
+		"HTTP/1.1 200 OK",
+		"Content-Type: text/html; charset=utf-8",
+//		"Content-Length: " + message.length//この指定をすると日本語が含まれている場合に途中で切れる
+	].join("\n");
+	var responseText = header + "\n\n" + message;
+	var arrayBuffer = string2arrayBuffer(responseText);
+	chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
+		chrome.sockets.tcp.disconnect(clientSocketId);
+		chrome.sockets.tcp.close(clientSocketId);
+	});
 }
 
 function string2arrayBuffer(string, notUTF8) {
