@@ -74,6 +74,32 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 			chrome.sockets.tcp.disconnect(clientSocketId);
 			chrome.sockets.tcp.close(clientSocketId);
 		});
+		
+		return;
+		// こちらはhttp://127.0.0.1:9000/favicon.icoにアクセスした時に表示されない
+		var filePath = "icon/icon-128.png";
+		var xhr = new XMLHttpRequest();
+		xhr.open("GET", filePath);
+		xhr.onload = function() {
+			if (xhr.readyState === 4) {
+				if (xhr.status === 200) {
+					var body = xhr.responseText;
+					var header = [
+						"HTTP/1.1 200 OK",
+						"Content-Type: image/png"
+					].join("\n");
+					var responseText = header + "\n\n" + body;
+					var arrayBuffer = string2arrayBuffer(responseText, "notUTF8");
+					chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
+						chrome.sockets.tcp.disconnect(clientSocketId);
+						chrome.sockets.tcp.close(clientSocketId);
+					});
+				} else {
+					notFound(clientSocketId);
+				}
+			}
+		};
+		xhr.send(null);
 	} else if (path === "/" || path === "/index.html") {
 		var filePath = "file/index.html";
 		var xhr = new XMLHttpRequest();
@@ -89,7 +115,6 @@ chrome.sockets.tcp.onReceive.addListener(function(info) {
 					var responseText = header + "\n\n" + body;
 					var arrayBuffer = string2arrayBuffer(responseText);
 					chrome.sockets.tcp.send(clientSocketId, arrayBuffer, function(info) {
-						console.log(123);
 						chrome.sockets.tcp.disconnect(clientSocketId);
 						chrome.sockets.tcp.close(clientSocketId);
 					});
