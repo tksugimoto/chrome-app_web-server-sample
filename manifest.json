@@ -1,5 +1,5 @@
 ﻿{
-	"name": "chromeアプリ-WEBサーバー",
+	"name": "WEBサーバー",
 	"description": "http://127.0.0.1:9000/にアクセスでページを返す",
 	"version": "0.1",
 	"permissions": [
